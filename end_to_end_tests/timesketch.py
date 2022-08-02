@@ -61,10 +61,11 @@ class TimesketchTest(interface.BaseEndToEndTest):
     _ = self._get_sketch(ip)
     views = ip.run_line_magic(
         magic_name='timesketch_list_saved_searches', line='')
-    expected_views = set([
+    expected_views = {
         '18:Szechuan Hits',
         '19:Szechuan All Hits',
-        '16:email_addresses'])
+        '16:email_addresses',
+    }
     self.assertions.assertEqual(set(views.keys()), expected_views)
 
   def test_query_data(self, ip: TerminalInteractiveShell):
@@ -78,12 +79,18 @@ class TimesketchTest(interface.BaseEndToEndTest):
     df_slice = df[df.origin == 'Beth_Secret.lnk']
     self.assertions.assertTrue(df_slice.shape[0] > 0)
     origin_set = set(df.origin.unique())
-    expected_set = set([
-        '9b9cdc69c1c24e2b.automaticDestinations-ms', 'Beth_Secret.lnk',
+    expected_set = {
+        '9b9cdc69c1c24e2b.automaticDestinations-ms',
+        'Beth_Secret.lnk',
         'HKEY_CURRENT_USER\\Software\\Classes\\Local Settings\\Software'
         '\\Microsoft\\Windows\\Shell\\BagMRU\\0\\0\\0',
-        'NoJerry.lnk', 'PortalGunPlans.lnk', 'SECRET_beth.lnk', 'Secret.lnk',
-        'Szechuan Sauce.lnk', 'f01b4d95cf55d32a.automaticDestinations-ms'])
+        'NoJerry.lnk',
+        'PortalGunPlans.lnk',
+        'SECRET_beth.lnk',
+        'Secret.lnk',
+        'Szechuan Sauce.lnk',
+        'f01b4d95cf55d32a.automaticDestinations-ms',
+    }
 
     self.assertions.assertSetEqual(origin_set, expected_set)
 

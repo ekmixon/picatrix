@@ -149,13 +149,14 @@ def connect(
         '%timesketch_create_sketch or assign an already existing '
         'one using %timesketch_set_active_sketch <sketch_id>')
 
-  client = config.get_client(
-      config_section=config_section, token_password=token_password,
-      confirm_choices=confirm_choices)
-  if not client:
+  if client := config.get_client(
+      config_section=config_section,
+      token_password=token_password,
+      confirm_choices=confirm_choices,
+  ):
+    state_obj.add_to_cache('timesketch_client', client)
+  else:
     raise ValueError('Unable to connect to Timesketch')
-
-  state_obj.add_to_cache('timesketch_client', client)
 
 
 def get_context_date(
@@ -273,17 +274,16 @@ def get_sketch_details(sketch_id: Optional[int] = 0) -> Text:
   except KeyError:
     return 'TS server returned no information back about the sketch'
 
-  return_string_list = []
-  return_string_list.append(f'Name: {sketch.name}')
-  return_string_list.append(f'Description: {sketch.description}')
-  return_string_list.append(f'ID: {sketch.id}')
-  return_string_list.append('')
-  return_string_list.append('Active Timelines:')
-
-  for timeline in sketch.list_timelines():
-    return_string_list.append(
-        f'{timeline.name} [{timeline.description}] -> {timeline.index_name}')
-
+  return_string_list = [
+      f'Name: {sketch.name}',
+      f'Description: {sketch.description}',
+      f'ID: {sketch.id}',
+      '',
+      'Active Timelines:',
+  ]
+  return_string_list.extend(
+      f'{timeline.name} [{timeline.description}] -> {timeline.index_name}'
+      for timeline in sketch.list_timelines())
   return '\n'.join(return_string_list)
 
 
@@ -523,22 +523,17 @@ def query_timesketch(
   state_obj = state.state()
   sketch = state_obj.get_from_cache('timesketch_sketch')
 
-  if all([x is None for x in [query, query_dsl]]):
+  if all(x is None for x in [query, query_dsl]):
     raise KeyError('Need to provide a query or query_dsl')
 
   chip = None
-  if start_date or end_date:
-    if start_date and end_date:
-      chip = api_search.DateRangeChip()
-      chip.start_time = start_date
-      chip.end_time = end_date
-    else:
-      chip = api_search.DateIntervalChip()
-      if end_date:
-        chip.date = end_date
-      else:
-        chip.date = start_date
-
+  if start_date and end_date:
+    chip = api_search.DateRangeChip()
+    chip.start_time = start_date
+    chip.end_time = end_date
+  elif start_date or end_date:
+    chip = api_search.DateIntervalChip()
+    chip.date = end_date or start_date
   search_obj = api_search.Search(sketch)
   search_obj.from_manual(
       query_string=query,
@@ -546,8 +541,7 @@ def query_timesketch(
       query_filter=query_filter,
       max_entries=max_entries)
 
-  return_fields = _fix_return_fields(return_fields)
-  if return_fields:
+  if return_fields := _fix_return_fields(return_fields):
     search_obj.return_fields = return_fields
 
   if chip:
@@ -721,10 +715,7 @@ def timesketch_get_timelines(data: Text) -> Dict[str, api_timeline.Timeline]:
   else:
     sketch = state_obj.get_from_cache('timesketch_sketch')
 
-  if not sketch:
-    return []
-
-  return {x.name: x for x in sketch.list_timelines()}
+  return {x.name: x for x in sketch.list_timelines()} if sketch else []
 
 
 @framework.picatrix_magic
@@ -759,12 +750,8 @@ def timesketch_create_sketch(
   if set_active:
     set_active_sketch(sketch.id)
 
-  return_string_list = []
-  return_string_list.append(f'Sketch: {sketch.id}')
-  return_string_list.append(f'Name: {sketch.name}')
-
-  data_objects = sketch.data.get('objects')
-  if data_objects:
+  return_string_list = [f'Sketch: {sketch.id}', f'Name: {sketch.name}']
+  if data_objects := sketch.data.get('objects'):
     data = data_objects[0]
     status_dict = data.get('status', [{}])[0]
     creation_time = status_dict.get('created_at', 'N/A')
@@ -928,28 +915,23 @@ def timesketch_list_timelines(data: Optional[Text] = '') -> Text:
   return_lines = []
 
   for timeline in timelines:
-    return_lines.append('         --- Timeline: {0:^s} ---'.format(
-        timeline.name))
-    return_lines.append('-'*80)
-    return_lines.append('')
-
+    return_lines.extend((
+        '         --- Timeline: {0:^s} ---'.format(timeline.name),
+        '-' * 80,
+        '',
+    ))
     data = timeline.data
     for index, data_object in enumerate(data.get('objects', [])):
       return_lines.append('Object nr: {0:d}'.format(index + 1))
 
-      description = data_object.get('description')
-      if description:
-        return_lines.append('Description: {0:s}'.format(description))
-        return_lines.append('')
-
+      if description := data_object.get('description'):
+        return_lines.extend(('Description: {0:s}'.format(description), ''))
       status_list = data_object.get('status', [])
       status = 'unknown'
       if status_list:
         status_dict = status_list[0]
         status = status_dict.get('status', 'N/A')
-        return_lines.append('Status: {0:s}'.format(status))
-        return_lines.append('')
-
+        return_lines.extend(('Status: {0:s}'.format(status), ''))
       analyzer_output = data_object.get('searchindex', {}).get('description')
       if status == 'ready':
         return_lines.append('Analyzer Reports:')
@@ -957,15 +939,12 @@ def timesketch_list_timelines(data: Optional[Text] = '') -> Text:
         for x in analyzer_output.split('\n'):
           if x and x not in analyzer_lines:
             analyzer_lines.append(x)
-        for line_number, line in enumerate(analyzer_lines):
-          return_lines.append(
-              '  [{0:d}] {1:s}'.format(line_number + 1, line.strip()))
+        return_lines.extend(
+            '  [{0:d}] {1:s}'.format(line_number + 1, line.strip())
+            for line_number, line in enumerate(analyzer_lines))
       else:
-        return_lines.append('Error Message:')
-        return_lines.append(analyzer_output)
-
-    return_lines.append('='*80)
-    return_lines.append('')
+        return_lines.extend(('Error Message:', analyzer_output))
+    return_lines.extend(('='*80, ''))
   return '\n'.join(return_lines)
 
 
@@ -1102,10 +1081,7 @@ def timesketch_run_aggregation_dsl(
 
   agg_obj = sketch.aggregate(data.strip())
 
-  if as_object:
-    return agg_obj
-
-  return agg_obj.table
+  return agg_obj if as_object else agg_obj.table
 
 
 @framework.picatrix_magic
@@ -1251,9 +1227,6 @@ def timesketch_list_stories(
   connect(ignore_sketch=True)
   state_obj = state.state()
   sketch = state_obj.get_from_cache('timesketch_sketch')
-  if not sketch:
-    return 'No data, not connected to a sketch.'
-  story_dict = {}
-  for story in sketch.list_stories():
-    story_dict[story.title] = story
-  return story_dict
+  return ({story.title: story
+           for story in sketch.list_stories()}
+          if sketch else 'No data, not connected to a sketch.')

@@ -206,8 +206,7 @@ class MagicManager:
     if name in cls._helpers:
       raise KeyError(
           f'The helper [{name}] is already registered.')
-    doc_string = helper.__doc__
-    if doc_string:
+    if doc_string := helper.__doc__:
       help_string = doc_string.split('\n')[0]
     else:
       help_string = 'No help string supplied.'

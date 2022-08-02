@@ -42,10 +42,8 @@ def picatrixhelpers(data: Optional[Text] = '') -> pandas.DataFrame:
     return info_df
 
   helper_obj = manager.MagicManager.get_helper(data)
-  if not helper_obj:
-    return pandas.DataFrame()
-
-  return info_df[info_df.name == data.strip()]
+  return (info_df[info_df.name == data.strip()]
+          if helper_obj else pandas.DataFrame())
 
 
 @framework.picatrix_magic
@@ -89,6 +87,4 @@ def last_output(data: Optional[Text] = '') -> Any:
     The last output from a magic that was run.
   """
   state_obj = state.state()
-  output = state_obj.last_output
-
-  return output
+  return state_obj.last_output

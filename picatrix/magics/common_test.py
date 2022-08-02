@@ -43,8 +43,7 @@ def test_registration():
   df = magic(line='')
   assert len(df) == 2
   assert set(df.columns) == set(manager.MagicManager.MAGICS_DF_COLUMNS)
-  assert set(df.name.unique()) == set(
-      ['my_very_own_test_magic', 'picatrixmagics'])
+  assert set(df.name.unique()) == {'my_very_own_test_magic', 'picatrixmagics'}
 
   magic = framework.picatrix_magic(common.last_output)
   same_df = magic(line='')

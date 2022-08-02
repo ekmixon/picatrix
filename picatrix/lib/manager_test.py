@@ -84,6 +84,7 @@ def test_magic_info():
   def second_magic():
     """This is even more magic."""
     return 'fab'
+
   second_magic.magic_name = 'some_magic'
   second_magic.fn = second_magic
   manager.MagicManager.register_magic(second_magic)
@@ -101,9 +102,11 @@ def test_magic_info():
   assert not info_df[info_df.name == 'other_magic'].empty
 
   desc_set = set(info_df.description.unique())
-  expected_set = set([
-      'Could this be it?', 'This is even more magic.',
-      'This is a magical function that returns pure magic.'])
+  expected_set = {
+      'Could this be it?',
+      'This is even more magic.',
+      'This is a magical function that returns pure magic.',
+  }
 
   assert desc_set == expected_set
 

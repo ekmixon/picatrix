@@ -90,11 +90,7 @@ class _Magic:
       name_func: Optional[Callable[[Text], Text]] = None):
     """Initialize the Picatrix Magic."""
     self.fn = fn
-    if name_func:
-      self.magic_name = name_func(fn.__name__)
-    else:
-      self.magic_name = fn.__name__
-
+    self.magic_name = name_func(fn.__name__) if name_func else fn.__name__
     functools.update_wrapper(self, fn)
     self.__name__ = self.magic_name
 
@@ -353,10 +349,7 @@ def _add_function_arguments_to_parser(
     elif arg_type_string == 'bool':
       arg_type = bool
       arg_default = default_values.get(variable)
-      if arg_default:
-        action = 'store_false'
-      else:
-        action = 'store_true'
+      action = 'store_false' if arg_default else 'store_true'
     else:
       # Type is a string reference to an object.
       arg_type = str
