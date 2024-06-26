@@ -25,3 +25,5 @@ xlrd>=1.2.0
 typing-extensions==3.7.4.3
 networkx>=2.5
 ipyaggrid>=0.2.1
+tornado>=6.4.1 # not directly required, pinned by Snyk to avoid a vulnerability
+anyio>=4.4.0 # not directly required, pinned by Snyk to avoid a vulnerability
