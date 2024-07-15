@@ -25,3 +25,4 @@ xlrd>=1.2.0
 typing-extensions==3.7.4.3
 networkx>=2.5
 ipyaggrid>=0.2.1
+setuptools>=70.0.0 # not directly required, pinned by Snyk to avoid a vulnerability
