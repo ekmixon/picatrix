@@ -1,4 +1,4 @@
-FROM python:3.8-slim
+FROM python:3.14.0a1-slim
 
 # Create folders and fix permissions.
 RUN groupadd --gid 1000 picagroup && \
